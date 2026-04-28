@@ -150,12 +150,14 @@ func llmStream(c *llmCtx, out chan<- messageOutput) {
 			Content: fullMsg.String(),
 		})
 	}
-	close(out)
 }
 
 func llmStreamStart(c *llmCtx) <-chan messageOutput {
 	s := make(chan messageOutput, 1)
-	go llmStream(c, s)
+	go func() {
+		llmStream(c, s)
+		close(s)
+	}()
 	return s
 }
 
