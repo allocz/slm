@@ -316,14 +316,31 @@ func consoleLoop() error {
 	}
 
 	s := bufio.NewScanner(os.Stdin)
-	fmt.Printf("\x1b[2J"+"\x1b[0;0H"+"SLM by allocz\n"+"(%s)>>> ", status())
+	clearScreen := func() {
+		fmt.Printf("\x1b[2J" + "\x1b[0;0H")
+	}
+	slmMessage := func() {
+		fmt.Printf("SLM by allocz\n")
+	}
+	prompt := func() {
+		fmt.Printf(
+			"\x1b[0;36m" +
+			"(%s)>>>" +
+			"\x1b[0m" +
+			" ",
+			status(),
+		)
+	}
+	clearScreen()
+	slmMessage()
+	prompt()
 	for !stop && s.Scan() {
 		func() {
 			defer func() {
 				if stop {
 					return
 				}
-				fmt.Printf("(%s)>>> ", status())
+				prompt()
 			}()
 			line := s.Text()
 			data, ok = strings.CutPrefix(line, "/echo ")
@@ -333,7 +350,7 @@ func consoleLoop() error {
 			}
 			data, ok = strings.CutPrefix(line, "/clear")
 			if ok {
-				fmt.Printf("\x1b[2J" + "\x1b[0;0H")
+				clearScreen()
 				history = append(history, lc.messages...)
 				lc.messages = lc.messages[:0]
 				return
@@ -344,7 +361,7 @@ func consoleLoop() error {
 					if m.Role == "user" {
 						fmt.Print(">>> ")
 					}
-					fmt.Println(m.Content)
+					fmt.Printf("%s\n\n", m.Content)
 				}
 				return
 			}
@@ -368,6 +385,7 @@ func consoleLoop() error {
 				Content: line,
 			})
 			output := llmStreamStart(&lc)
+			fmt.Print("\n")
 			for m := range output {
 				if m.err != nil {
 					fmt.Println(WrapMsg("error: %w", m.err))
@@ -375,7 +393,7 @@ func consoleLoop() error {
 				}
 				fmt.Print(m.messageFrame)
 			}
-			fmt.Print("\n")
+			fmt.Print("\n\n")
 		}()
 	}
 	return nil
