@@ -180,10 +180,32 @@ func llmConfigParse(c *llmCtx, args []string) error {
 		defaultValue string
 		dest         any
 		required     bool
+		desc string
 	}{
-		{"api-endpoint", "SLM_API_ENDPOINT", "", &c.apiEndpoint, true},
-		{"api-key", "SLM_API_KEY", "", &c.apiKey, true},
-		{"model", "SLM_MODEL", "", &c.model, true},
+		{
+			"api-endpoint",
+			"SLM_API_ENDPOINT",
+			"",
+			&c.apiEndpoint,
+			true,
+			"the chat completion API endpoint. ex: https://example.com/api/v1/chat/completions",
+		},
+		{
+			"api-key",
+			"SLM_API_KEY",
+			"",
+			&c.apiKey,
+			true,
+			"the API key to authenticate with the LLM provider",
+		},
+		{
+			"model",
+			"SLM_MODEL",
+			"",
+			&c.model,
+			true,
+			"the name of the model to be used (check your LLM API provider)",
+		},
 	}
 	fSet := flag.NewFlagSet("slm", flag.ExitOnError)
 	for _, cfg := range cfgTable {
@@ -192,7 +214,7 @@ func llmConfigParse(c *llmCtx, args []string) error {
 		}
 		switch dest := cfg.dest.(type) {
 		case *string:
-			fSet.StringVar(dest, cfg.flagName, cfg.defaultValue, "")
+			fSet.StringVar(dest, cfg.flagName, cfg.defaultValue, cfg.desc)
 		default:
 			return WrapMsg("bad type: %T", dest)
 		}
