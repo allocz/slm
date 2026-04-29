@@ -64,6 +64,8 @@ type llmCtx struct {
 	apiEndpoint string
 	apiKey      string
 	model       string
+	// If provided, execute prompt, print result and exit
+	prompt string
 
 	// state
 	messages []llmMessage
@@ -206,6 +208,14 @@ func llmConfigParse(c *llmCtx, args []string) error {
 			true,
 			"the name of the model to be used (check your LLM API provider)",
 		},
+		{
+			"p",
+			"",
+			"",
+			&c.prompt,
+			false,
+			"a prompt to be executed",
+		},
 	}
 	fSet := flag.NewFlagSet("slm", flag.ExitOnError)
 	for _, cfg := range cfgTable {
@@ -270,7 +280,13 @@ func llmConfigParse(c *llmCtx, args []string) error {
 }
 
 func consoleLoop() error {
-	var lc llmCtx
+	var (
+		lc llmCtx
+		data string
+		ok bool
+		history []llmMessage
+		stop bool
+	)
 	err := llmConfigParse(&lc, os.Args[1:])
 	if err != nil {
 		return Wrap(err)
@@ -280,14 +296,35 @@ func consoleLoop() error {
 		return lc.model
 	}
 
+	if lc.prompt != "" {
+		lc.messages = append(lc.messages, llmMessage{
+			Role:    "user",
+			Content: lc.prompt,
+		})
+		output := llmStreamStart(&lc)
+		for m := range output {
+			if m.err != nil {
+				fmt.Println(
+					WrapMsg("error: %w", m.err),
+				)
+				return nil
+			}
+			fmt.Print(m.messageFrame)
+		}
+		fmt.Print("\n")
+		return nil
+	}
+
 	s := bufio.NewScanner(os.Stdin)
-	var data string
-	var ok bool
-	var history []llmMessage
 	fmt.Printf("\x1b[2J"+"\x1b[0;0H"+"SLM by allocz\n"+"(%s)>>> ", status())
-	for s.Scan() {
+	for !stop && s.Scan() {
 		func() {
-			defer fmt.Printf("(%s)>>> ", status())
+			defer func() {
+				if stop {
+					return
+				}
+				fmt.Printf("(%s)>>> ", status())
+			}()
 			line := s.Text()
 			data, ok = strings.CutPrefix(line, "/echo ")
 			if ok {
@@ -313,7 +350,7 @@ func consoleLoop() error {
 			}
 			data, ok = strings.CutPrefix(line, "/q")
 			if ok {
-				os.Stdin.Close()
+				stop = true
 				return
 			}
 			data, ok = strings.CutPrefix(line, "/help")
