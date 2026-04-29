@@ -321,6 +321,7 @@ func consoleLoop() error {
 	}
 	slmMessage := func() {
 		fmt.Printf("SLM by allocz\n")
+		fmt.Printf("\ntype /help to get help\n\n")
 	}
 	prompt := func() {
 		fmt.Printf(
@@ -372,7 +373,12 @@ func consoleLoop() error {
 			}
 			data, ok = strings.CutPrefix(line, "/help")
 			if ok {
-				fmt.Println("TODO")
+				fmt.Println(`
+/q: exit
+/clear: clears the screen and context
+/history: shows all cleared messages
+				`,
+				)
 				return
 			}
 			data, ok = strings.CutPrefix(line, "/")
