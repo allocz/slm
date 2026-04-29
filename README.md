@@ -3,7 +3,7 @@
 
 Interact with multiple LLM models without leaving the terminal.
 
-![screenshot](./image/screenshot.png)
+![screenshot](./image/screenshot2.png)
 
 * Build
 ```bash
